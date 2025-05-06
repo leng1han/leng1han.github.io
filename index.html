@@ -166,19 +166,39 @@
         const inputTarget = isMobile ? mobileInput : document;
 
         if (isMobile) {
+            // 双击检测参数
+            let lastTap = 0;
+            let tapTimeout = null;
+            // 长按检测参数
             let pressTimer = null;
+
+            // 触摸事件处理
             canvas.addEventListener('touchstart', (e) => {
+                // 启动长按计时
                 pressTimer = setTimeout(() => {
                     mobileInput.focus();
                     pressTimer = null;
-                }, 800);
+                }, 1000);
             }, { passive: true });
 
             canvas.addEventListener('touchend', (e) => {
+                // 清除长按计时
                 if (pressTimer) {
                     clearTimeout(pressTimer);
                     pressTimer = null;
                 }
+                
+                // 双击检测
+                const currentTime = Date.now();
+                if (currentTime - lastTap < 300) {
+                    clearTimeout(tapTimeout);
+                    mobileInput.focus();
+                } else {
+                    tapTimeout = setTimeout(() => {
+                        lastTap = 0;
+                    }, 300);
+                }
+                lastTap = currentTime;
             });
 
             canvas.addEventListener('touchmove', (e) => {
@@ -188,6 +208,7 @@
                 }
             });
 
+            // 输入监听
             mobileInput.addEventListener('input', (e) => {
                 const lastChar = e.data ? e.data.slice(-1) : '';
                 keySequence.push(lastChar);
@@ -229,7 +250,6 @@
         });
 
         function showSpecialMessage(text) {
-            // 动态设置字体大小
             specialMessage.style.fontSize = isMobile ? '24px' : '48px';
             specialMessage.textContent = text;
             specialMessage.style.display = 'block';
