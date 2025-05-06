@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>爱你</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { display: block; }
+        .special-text {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #fff,
+                         0 0 20px #ff0000,
+                         0 0 30px #ff0000;
+            animation: sparkle 1s infinite;
+            display: none;
+        }
+        @keyframes sparkle {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="specialMessage" class="special-text"></div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const specialMessage = document.getElementById('specialMessage');
+        let keySequence = [];
+        
+        // 画布尺寸自适应
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 烟花系统初始化
+        let fireworks = [];
+        let particles = [];
+        const colors = ['#FF5252', '#4CAF50', '#2196F3', '#FFEB3B', '#E91E63', '#00BCD4', '#FF9800'];
+
+        class Firework {
+            constructor() {
+                this.reset();
+                this.timer = 0;
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height;
+                this.targetY = Math.random() * (canvas.height * 0.15) + (canvas.height * 0.25);
+                this.speed = 15 + Math.random() * 5;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.exploded = false;
+                this.timer = 0;
+            }
+
+            update() {
+                this.timer++;
+                if (!this.exploded) {
+                    this.y -= this.speed;
+                    this.speed *= 0.94;
+
+                    const shouldExplode = 
+                        this.y <= this.targetY || 
+                        this.speed < 0.5 || 
+                        this.timer > 100;
+
+                    if (shouldExplode) {
+                        this.explode();
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            draw() {
+                if (!this.exploded) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3, 0, Math.PI*2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+            }
+
+            explode() {
+                this.exploded = true;
+                for (let i = 0; i < 150; i++) {
+                    particles.push(new Particle(
+                        this.x,
+                        this.y,
+                        this.color
+                    ));
+                }
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.angle = Math.random() * Math.PI*2;
+                this.velocity = Math.random() * 8 + 4;
+                this.friction = 0.93;
+                this.gravity = 0.15;
+                this.alpha = 1;
+            }
+
+            update() {
+                this.velocity *= this.friction;
+                this.x += Math.cos(this.angle) * this.velocity;
+                this.y += Math.sin(this.angle) * this.velocity + this.gravity;
+                this.alpha -= 0.015;
+                return this.alpha > 0;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 1.8, 0, Math.PI*2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // 动画循环
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (Math.random() < 0.03) {
+                fireworks.push(new Firework());
+            }
+
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                fireworks[i].draw();
+                if (fireworks[i].update()) {
+                    fireworks.splice(i, 1);
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].draw();
+                if (!particles[i].update()) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // 点击交互（恢复无限制版本）
+        canvas.addEventListener('click', (e) => {
+            const fw = new Firework();
+            fw.x = e.clientX;
+            fw.y = e.clientY;
+            fw.targetY = e.clientY;
+            fireworks.push(fw);
+        });
+
+        // 键盘输入检测
+        document.addEventListener('keydown', (e) => {
+            keySequence.push(e.key);
+            if (keySequence.length > 3) keySequence.shift();
+
+            // 检测521序列
+            if (keySequence.join('') === '521') {
+                showSpecialMessage('王飞虎❤张晨');
+                createTextFireworks();
+            }
+            
+            // 检测520序列
+            if (keySequence.join('') === '520') {
+                showSpecialMessage('小虎❤晨晨');
+                createTextFireworks();
+            }
+        });
+
+        // 显示特殊消息
+        function showSpecialMessage(text) {
+            specialMessage.textContent = text;
+            specialMessage.style.display = 'block';
+            
+            // 只生成红色系（0-15度）和粉色系（330-360度）
+            const hue = Math.random() < 0.5 ? 
+                Math.floor(Math.random() * 15) :       // 红色范围
+                330 + Math.floor(Math.random() * 30);  // 粉色范围
+                
+            specialMessage.style.color = `hsl(${hue}, 100%, 50%)`;
+            
+            setTimeout(() => {
+                specialMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // 创建文字烟花特效
+        function createTextFireworks() {
+            for (let i = 0; i < 50; i++) {
+                const fw = new Firework();
+                fw.x = Math.random() * canvas.width;
+                fw.y = 50;
+                fw.targetY = 50;
+                fw.color = colors[Math.floor(Math.random() * colors.length)];
+                fw.explode();
+            }
+        }
+
+        animate();
+    </script>
+</body>
+</html>
