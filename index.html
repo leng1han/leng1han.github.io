@@ -166,29 +166,23 @@
         const inputTarget = isMobile ? mobileInput : document;
 
         if (isMobile) {
-            // 双击检测参数
             let lastTap = 0;
             let tapTimeout = null;
-            // 长按检测参数
             let pressTimer = null;
 
-            // 触摸事件处理
             canvas.addEventListener('touchstart', (e) => {
-                // 启动长按计时
                 pressTimer = setTimeout(() => {
                     mobileInput.focus();
                     pressTimer = null;
-                }, 800);
+                }, 1000);
             }, { passive: true });
 
             canvas.addEventListener('touchend', (e) => {
-                // 清除长按计时
                 if (pressTimer) {
                     clearTimeout(pressTimer);
                     pressTimer = null;
                 }
                 
-                // 双击检测
                 const currentTime = Date.now();
                 if (currentTime - lastTap < 300) {
                     clearTimeout(tapTimeout);
@@ -208,7 +202,6 @@
                 }
             });
 
-            // 输入监听
             mobileInput.addEventListener('input', (e) => {
                 const lastChar = e.data ? e.data.slice(-1) : '';
                 keySequence.push(lastChar);
@@ -216,7 +209,17 @@
                 checkSpecialCode();
             });
         } else {
+            // 修复桌面端输入检测
             document.addEventListener('keydown', (e) => {
+                // 忽略功能键（如Shift/Ctrl等）
+                if (e.key.length > 1 && e.key !== 'Backspace') return;
+                
+                // 处理删除键
+                if (e.key === 'Backspace') {
+                    keySequence.pop();
+                    return;
+                }
+
                 keySequence.push(e.key);
                 if (keySequence.length > 3) keySequence.shift();
                 checkSpecialCode();
@@ -228,12 +231,12 @@
             if (code === '521') {
                 showSpecialMessage('王飞虎❤张晨');
                 createTextFireworks();
-                keySequence.length = 0;
+                keySequence.length = 0; // 触发后清空队列
             }
             if (code === '520') {
                 showSpecialMessage('小虎❤晨晨');
                 createTextFireworks();
-                keySequence.length = 0;
+                keySequence.length = 0; // 触发后清空队列
             }
         }
 
